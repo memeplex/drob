@@ -68,7 +68,7 @@ predefined strings:
 \code{loss(y - model$fun(x, t))} will be minimized with respect to \code{t} using a
 differential evolution routine provided by the \code{DEoptimR} package. Lower
 and upper bounds for the search come from \code{model$init} as documented for
-the \code{model} parameter. Other arguments passed to \code{JDEoptim} may be overriden
+the \code{model} parameter. Other arguments passed to \code{JDEoptim} may be overridden
 by passing a \code{de_args} function. If the optimizer fails to converge to a
 solution, the entire \code{drob} function execution is aborted with an error.}
 
@@ -120,7 +120,7 @@ The result of the first successful optimizer is kept. If all optimizers
 fail to converge to a solution, the entire \code{drob} function execution is
 aborted with an error.
 
-Other arguments passed to \code{optim} may be overriden by passing a \code{qn_args}
+Other arguments passed to \code{optim} may be overridden by passing a \code{qn_args}
 function.}
 
 \item{lts_q}{The proportion of data to be removed by the upper-trimmed mean
@@ -145,7 +145,7 @@ the standard normal distribution.}
 to \code{JDEoptim} in step 1 and returns and arbitrarily modified list of
 arguments. By default it returns its argument unmodified.}
 
-\item{qn_args}{A function that takes a list with the arguments to be pased
+\item{qn_args}{A function that takes a list with the arguments to be passed
 to \code{optim} in step 3 and returns and arbitrarily modified list of
 arguments. By default it returns its argument unmodified.}
 
@@ -172,7 +172,7 @@ A list containing the following elements:
 \item \code{t0}: a vector with the initial location estimate, produced by step 1.
 \item \code{s}: a vector with a scale estimate for each dose, produced by step 2.
 \code{names(s)} will then give the corresponding doses.
-\item \code{init}: a list with the results of the initialization step for the model.
+\item \code{init}: a list with the results of the initialization phase (\code{model$init}).
 It usually includes a non-robust location estimate and its standard error
 estimates, besides lower and upper search bounds.
 \item \code{loss}: the value of the loss function for step 3 evaluated at \code{t}.
