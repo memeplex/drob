@@ -2,15 +2,27 @@ library(MASS)
 library(drc)
 library(DEoptimR)
 
-#' The 4-parameter logistic function (4PL)
+#' The 4-parameter logistic model (4PL)
 #'
-#' `fpl` is a list containing three elements related to the FPL model, as
-#' required by the `model` parameter of the `drob` function:
-#' - `fun`: the FPL function itself. `fpl$fun` takes as arguments a vector
-#'   of values `x` and a vector of 4 parameters `t` .
-#' - `grad`: the gradient of the 4PL function, also expressed as a function
+#' @description
+#' `fpl` is a list containing three elements related to the 4-parameter logistic
+#' model, as required by the `model` parameter of the `drob` function:
+#' - `fun`: the 4PL-function itself. It takes as arguments a vector of values
+#'   `x` and a vector of 4 parameters `t` .
+#' - `grad`: the gradient of the 4PL-function, also expressed as a function
 #'   of `x` and `t`.
 #' - `init`: a function that computes initial parameters and search bounds.
+#'
+#' @examples
+#'
+#' t <- c(10, 10, 40, 20)
+#' x <- 1:100
+#' eta <- fpl$fun(x, t)
+#' y <- eta + rnorm(100)
+#' est <- fpl$init(x, y)
+#' plot(x, y)
+#' lines(x, eta)
+#' lines(x, fpl$fun(x, est$t), lty = "dashed")
 #'
 #' @export
 fpl <- list(
@@ -40,17 +52,27 @@ fpl <- list(
 
 #' Return bisquare and its derivatives
 #'
-#' `bisquare` computes bisquare (aka Tukey's biweight) function for a given
-#' cutoff point. It also computes its first two derivatives. All three functions
-#' are returned as elements of a list, as required by the `step_1` parameter of
-#' the `drob` function.
+#' @description
+#' This computes bisquare (aka Tukey's biweight) function for a given cutoff
+#' point. It also computes its first two derivatives. All three functions
+#' are returned as elements of a list with names `rho`, `psi` and `dpsi`,
+#' as required by the `step_1` parameter of the `drob` function.
 #'
-#' @param k The cutoff point below and above which rho evaluates to 1.
+#' @param k The cutoff point below and above which the bisquare function
+#'   evaluates to 1.
 #'
 #' @return A list with three elements:
-#' - `rho`: The bisquare function
-#' - `psi`: The first derivative of rho
-#' - `dpsi`: The second derivative of rho
+#' - `rho`: The bisquare function.
+#' - `psi`: The first derivative of the bisquare function.
+#' - `dpsi`: The second derivative of the bisquare function.
+#'
+#' @examples
+#'
+#' x <- seq(-3, 3, length.out = 100)
+#' bi2 <- bisquare(2)
+#' plot(x, bi2$rho(x), type = "l", ylim = c(-1.5, 1.5))
+#' lines(x, bi2$psi(x), col = 2)
+#' lines(x, bi2$dpsi(x), col = 3)
 #'
 #' @export
 bisquare <- function(k) {
@@ -64,19 +86,22 @@ bisquare <- function(k) {
 
 #' Compute M-estimate of scale
 #'
-#' `m_scale` computes an M-estimate of scale for a given rho function using
-#' one-dimensional root finding.
+#' @description
+#' `m_scale` computes an M-estimate of scale for a given rho-function using
+#' a one-dimensional root finding routine.
 #'
-#' @param r A vector of values (typically residuals) which scale is to be
+#' @param r A vector of values (typically residuals) whose scale is to be
 #'   computed.
-#' @param rho The rho function that defines the M-estimate of scale.
+#' @param rho The rho-function that defines the M-estimate of scale.
 #' @param extend The interval for root finding will extend from 0 to `extend`
 #'   times the median absolute value of `r`. Defaults to 5.
 #'
-#' @return The `rho`-based M-estimate of scale for `r`.
+#' @return An M-estimate of scale for `r` based on function `rho`.
 #'
 #' @examples
-#' m_scale(r, bisquare(1.55))
+#' r <- rnorm(1000, 0, 3)
+#' rho <- bisquare(1.55)$rho
+#' m_scale(r, rho)
 #'
 #' @export
 m_scale <- function(r, rho, extend = 5) {
@@ -87,19 +112,22 @@ m_scale <- function(r, rho, extend = 5) {
 
 #' Compute robust estimates of dose-response model parameters
 #'
-#' `drob` computes an M-estimate of location, given data `x` and `y` and model
-#' `model`, potentially nonlinear and heteroscedastic. It implements a 3-step
+#' @description
+#'
+#' `drob` computes an M-estimate of location from data `x` and `y`, given a
+#' potentially nonlinear and heteroscedastic model. It implements a 3-step
 #' procedure in the spirit of MM-estimation:
 #' - Step 1: heuristically computes an initial location estimate `t0`.
 #' - Step 2: computes scale estimates `s` for each dose, based on the residuals
 #'   with respect to `t0`.
-#' - Step 3: starting from `t0` and scaling by `s` a final location estimate `t`
-#'   is found iteratively.
-#' Each step can be fine-tuned using the parameters described below.
+#' - Step 3: starting from `t0` and scaling by `s` a final location M-estimate
+#'   `t` is found iteratively.
+#'
+#' Each step may be fine-tuned using the parameters described below.
 #'
 #' @param x A vector of doses. It is expected that each dose is repeated enough
 #' times so as to be able to compute a good estimate of scale conditional to
-#' the dose in step 2.
+#' the dose during step 2.
 #'
 #' @param y A vector of responses with the same length than `x`.
 #'
@@ -108,7 +136,7 @@ m_scale <- function(r, rho, extend = 5) {
 #' - `fun`: the model function, which takes doses `x` and parameters `t` as
 #'   its two only arguments.
 #' - `init`: an initialization function that is able to produce lower and
-#'   upper search bounds for step 1. It takes `x`, `y` as arguments, as well
+#'   upper search bounds for step 1. It takes `x` and `y` as arguments, as well
 #'   as an optional `extend` argument that controls the extension of the
 #'   search region.
 #'
@@ -121,50 +149,50 @@ m_scale <- function(r, rho, extend = 5) {
 #' @param step_1 The loss function used for computing `t0`. It may be a function
 #' that takes a vector of residuals as its only argument or one of the following
 #' predefined strings:
-#' - `"lts"`: upper-trimmed mean (up to `lts_q`) of squared residuals.
+#' - `"lts"`: `lts_q`-upper-trimmed mean of squared residuals.
 #' - `"lms"`: median of squared residuals.
 #' - `"ml1"`: mean of absolute residuals. This implements an M-estimate with
-#'   `rho(r)` equal to `|r|`, i.e. L1-regression.
+#'   `rho(r)` = `|r|`, i.e. L1-regression.
 #' - `"sl1"`: median of absolute residuals. This implements an S-estimate with
-#'   `rho(r)` equal to `I(|r| > 1)`.
+#'   `rho(r)` = `I(|r| > 1)`.
 #' - `"mbi"`: loss for bisquare M-estimate with cutoff point `mbi_k`, scaled by
-#'   `mad(y)` so as to make it scale-equivariant.
+#'   `1 / mad(y)` so as to make it scale-equivariant.
 #' - `"sbi"`: (the default) loss for bisquare S-estimate with cutoff point
-#'   `sbi_k`. The root finding routine will be extended by `ms_extend` (see the
-#'   documentation for `m_scale`).
+#'   `sbi_k`. The root finding search interval will be extended according to
+#'   `ms_extend` (see the documentation for `m_scale`).
 #'
 #' `loss(y - model$fun(x, t))` will be minimized with respect to `t` using a
 #' differential evolution routine provided by the `DEoptimR` package. Lower
 #' and upper bounds for the search come from `model$init` as documented for
-#' the `model` parameter. Other arguments passed to `JDEoptim` may be overriden
+#' the `model` parameter. Other arguments passed to `JDEoptim` may be overridden
 #' by passing a `de_args` function. If the optimizer fails to converge to a
 #' solution, the entire `drob` function execution is aborted with an error.
 #'
-#' @param step_2 The function used for computing a scale estimate for each dose.
-#' It may be a function taking a vector of residuals (with respect to `t0`,
+#' @param step_2 The function used to compute a scale estimate for each dose.
+#' It may be a function taking a vector of residuals (relative to `t0`, as
 #' computed in step 1) and returning a scale estimate, or one of the following
 #' predefined strings:
 #' - `"sl1"`: median of absolute residuals. This is an M-estimate of scale with
-#'   `rho(r)` equal to `I(|r| > 1)`. It is scaled by `sl1_k`.
+#'   `rho(r)` = `I(|r| > 1)`. It is scaled by `sl1_k`.
 #' - `"sbi"`: (the default) bisquare M-estimate of scale with cutoff point
 #'   `sbi_k`.
 #'
 #' The default values for `sl1_k` and `sbi_k` make the estimates equal to 1
 #' under the standard normal distribution. The function is called once for
-#' each different dose, passing it a vector with the responses for such dose.
+#' each different dose, passing it a vector of residuals for such dose.
 #'
-#' @param step_3 The loss function used for computing `t`. It may be the
+#' @param step_3 The loss function used to compute `t`. It may be the
 #' string `"mbi"` (the default) for a bisquare loss defining an M-estimate
 #' with cutoff point `mbi_k` or, more generally, a list containing at the least
 #' the following mandatory element:
 #' - `rho`: a rho-function taking a vector of scaled residuals.
 #'
-#' The list may also contain two optional arguments:
+#' The list may also contain two optional elements:
 #' - `psi`: the first derivative of `rho`.
 #' - `dpsi`: the second derivative of `rho`.
 #'
 #' When `psi` and `dpsi` are present (as well as `model$grad`) standard errors
-#' of the returned estimates will be computed. Moreover, when `psi` is present
+#' for the returned estimates will be computed. Moreover, when `psi` is present
 #' (as well as `model$grad` and also `qn_gr` is `TRUE`) a gradient function
 #' is composed and passed as the argument for the parameter `gr` of `optim`.
 #'
@@ -180,57 +208,58 @@ m_scale <- function(r, rho, extend = 5) {
 #' fail to converge to a solution, the entire `drob` function execution is
 #' aborted with an error.
 #'
-#' Other arguments passed to `optim` may be overriden by passing a `qn_args`
+#' Other arguments passed to `optim` may be overridden by passing a `qn_args`
 #' function.
 #'
-#' @param lts_q The proportion of data to delete for the upper-trimmed mean
+#' @param lts_q The proportion of data to be removed by the upper-trimmed mean
 #' loss (used when `step_1` is `"lts"`). By default 0.5 to achieve a high
 #' breakdown point.
 #'
 #' @param mbi_k The cutoff point used for bisquare M-estimates (argument
-#' `"mbi"` to `step_1` or `step_3`). By default 3.44 to achieve about 85%
-#' asymptotic efficiency under the normal distribution. Other typical values
+#' `"mbi"` to `step_1` or `step_3`). By default 3.44 in order to achieve about
+#' 85% asymptotic efficiency under the normal distribution. Other typical values
 #' and their asymptotic efficiencies are: 3.14 (80%), 3.88 (90%), 4.68 (95%).
 #'
 #' @param sbi_k The cutoff point used for bisquare M-estimates of scale and,
 #' consequently, also for bisquare S-estimates (argument `"sbi"` to `step_1`
-#' or `step_2`). By default 1.548 to achieve a breakdown point of about 0.5.
+#' or `step_2`). By default 1.548 in order to achieve a breakdown point of
+#' about 0.5.
 #'
 #' @param sl1_k Scaling factor for the median of absolute residuals (
-#' argument `"sl1"` to `step_2`). By default 1.48 so that scale equals 1 under
+#' argument `"sl1"` to `step_2`). By default 1.48 in order to get 1 under
 #' the standard normal distribution.
 #'
-#' @param de_args A function that takes a list with the arguments to be pased
+#' @param de_args A function that takes a list with the arguments to be passed
 #' to `JDEoptim` in step 1 and returns and arbitrarily modified list of
 #' arguments. By default it returns its argument unmodified.
 #'
-#' @param qn_args A function that takes a list with the arguments to be pased
+#' @param qn_args A function that takes a list with the arguments to be passed
 #' to `optim` in step 3 and returns and arbitrarily modified list of
 #' arguments. By default it returns its argument unmodified.
 #'
-#' @param qn_gr A flag that indicates if a composed function is passed as the
-#' argument to the parameter `gr` of the `optim` routine in step 3. Besides
-#' pass `TRUE` to `qn_gr`, for this to be the case both `model$grad` and
-#' `loss$psi` must be provided. Otherwise, a finite-difference approximation
+#' @param qn_gr A flag that indicates if a gradient function is to be built and
+#' passed as the argument to the parameter `gr` of the `optim` routine in
+#' step 3. Besides `qn_gr` = `TRUE`, for this to be the case both `model$grad`
+#' and `loss$psi` must be provided. Otherwise, a finite-difference approximation
 #' will be used as per usual. By default `FALSE`.
 #'
 #' @param ms_extend When computing bisquare M-estimates of scale and,
 #' consequently, also when computing bisquare S-estimates, `ms_extend` will
-#' be based to `m_scale` in order to extend the root finding interval (for
-#' further details, refer to the documentation for `m_scale`). By default 5.
+#' be passed to `m_scale` in order to extend the root finding interval (for
+#' further details, refer to the documentation of `m_scale`). By default 5.
 #'
 #' @param init_extend Passed to `model$init` in order to extend the search
-#' region defined by the lower and bounds passed to the differential
-#' evolution routine in step 1 and to the quasi-Newton L-BFGS-B routine in
+#' region defined by the lower and bounds employed both for the differential
+#' evolution routine in step 1 and for the quasi-Newton L-BFGS-B routine in
 #' step 3. By default 3.
 #'
 #' @return A list containing the following elements:
 #' - `t`: a vector with the final location estimate, produced by step 3.
 #' - `t0`: a vector with the initial location estimate, produced by step 1.
 #' - `s`: a vector with a scale estimate for each dose, produced by step 2.
-#'   `names(s)` gives the corresponding doses.
-#' - `init`: a list with the results of the initialization step for the model.
-#'   It usually includes a non-robust location estimate with its standard error
+#'   `names(s)` will then give the corresponding doses.
+#' - `init`: a list with the results of the initialization phase (`model$init`).
+#'   It usually includes a non-robust location estimate and its standard error
 #'   estimates, besides lower and upper search bounds.
 #' - `loss`: the value of the loss function for step 3 evaluated at `t`.
 #'
@@ -360,16 +389,3 @@ drob <- function( # nolint
 
   list(t = t, t0 = t0, s = s, se = se, init = init, loss = res$value)
 }
-
-
-
-
-# https://cran.r-project.org/web/packages/robustbase/vignettes/psi_functions.pdf
-# The constant k for 95% efficiency of the regression estimator is 4.685 and
-# the constant for a breakdown point of 0.5 of the S-estimator is 1.548
-
-# p.35, rho(r) = I(|r|>1), d = 0.5 => median(abs(r))
-# p.130
-# When computing an initial estimate β0 for the MM-estimate,
-# the bisquare ρ works quite well and we recommend its use for this purpose.
-

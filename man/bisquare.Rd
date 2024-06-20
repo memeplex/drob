@@ -7,19 +7,29 @@
 bisquare(k)
 }
 \arguments{
-\item{k}{The cutoff point below and above which rho evaluates to 1.}
+\item{k}{The cutoff point below and above which the bisquare function
+evaluates to 1.}
 }
 \value{
 A list with three elements:
 \itemize{
-\item \code{rho}: The bisquare function
-\item \code{psi}: The first derivative of rho
-\item \code{dpsi}: The second derivative of rho
+\item \code{rho}: The bisquare function.
+\item \code{psi}: The first derivative of the bisquare function.
+\item \code{dpsi}: The second derivative of the bisquare function.
 }
 }
 \description{
-\code{bisquare} computes bisquare (aka Tukey's biweight) function for a given
-cutoff point. It also computes its first two derivatives. All three functions
-are returned as elements of a list, as required by the \code{step_1} parameter of
-the \code{drob} function.
+This computes bisquare (aka Tukey's biweight) function for a given cutoff
+point. It also computes its first two derivatives. All three functions
+are returned as elements of a list with names \code{rho}, \code{psi} and \code{dpsi},
+as required by the \code{step_1} parameter of the \code{drob} function.
+}
+\examples{
+
+x <- seq(-3, 3, length.out = 100)
+bi2 <- bisquare(2)
+plot(x, bi2$rho(x), type = "l", ylim = c(-1.5, 1.5))
+lines(x, bi2$psi(x), col = 2)
+lines(x, bi2$dpsi(x), col = 3)
+
 }

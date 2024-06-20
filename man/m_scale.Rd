@@ -7,22 +7,24 @@
 m_scale(r, rho, extend = 5)
 }
 \arguments{
-\item{r}{A vector of values (typically residuals) which scale is to be
+\item{r}{A vector of values (typically residuals) whose scale is to be
 computed.}
 
-\item{rho}{The rho function that defines the M-estimate of scale.}
+\item{rho}{The rho-function that defines the M-estimate of scale.}
 
 \item{extend}{The interval for root finding will extend from 0 to \code{extend}
 times the median absolute value of \code{r}. Defaults to 5.}
 }
 \value{
-The \code{rho}-based M-estimate of scale for \code{r}.
+An M-estimate of scale for \code{r} based on function \code{rho}.
 }
 \description{
-\code{m_scale} computes an M-estimate of scale for a given rho function using
-one-dimensional root finding.
+\code{m_scale} computes an M-estimate of scale for a given rho-function using
+a one-dimensional root finding routine.
 }
 \examples{
-m_scale(r, bisquare(1.55))
+r <- rnorm(1000, 0, 3)
+rho <- bisquare(1.55)$rho
+m_scale(r, rho)
 
 }

@@ -3,7 +3,7 @@
 \docType{data}
 \name{fpl}
 \alias{fpl}
-\title{The 4-parameter logistic function (4PL)}
+\title{The 4-parameter logistic model (4PL)}
 \format{
 An object of class \code{list} of length 3.
 }
@@ -11,14 +11,26 @@ An object of class \code{list} of length 3.
 fpl
 }
 \description{
-\code{fpl} is a list containing three elements related to the FPL model, as
-required by the \code{model} parameter of the \code{drob} function:
+\code{fpl} is a list containing three elements related to the 4-parameter logistic
+model, as required by the \code{model} parameter of the \code{drob} function:
 \itemize{
-\item \code{fun}: the FPL function itself. \code{fpl$fun} takes as arguments a vector
-of values \code{x} and a vector of 4 parameters \code{t} .
-\item \code{grad}: the gradient of the 4PL function, also expressed as a function
+\item \code{fun}: the 4PL-function itself. It takes as arguments a vector of values
+\code{x} and a vector of 4 parameters \code{t} .
+\item \code{grad}: the gradient of the 4PL-function, also expressed as a function
 of \code{x} and \code{t}.
 \item \code{init}: a function that computes initial parameters and search bounds.
 }
+}
+\examples{
+
+t <- c(10, 10, 40, 20)
+x <- 1:100
+eta <- fpl$fun(x, t)
+y <- eta + rnorm(100)
+est <- fpl$init(x, y)
+plot(x, y)
+lines(x, eta)
+lines(x, fpl$fun(x, est$t), lty = "dashed")
+
 }
 \keyword{datasets}

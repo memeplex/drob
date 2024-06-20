@@ -25,7 +25,7 @@ drob(
 \arguments{
 \item{x}{A vector of doses. It is expected that each dose is repeated enough
 times so as to be able to compute a good estimate of scale conditional to
-the dose in step 2.}
+the dose during step 2.}
 
 \item{y}{A vector of responses with the same length than \code{x}.}
 
@@ -35,7 +35,7 @@ generally, a list describing a model with at least two mandatory elements:
 \item \code{fun}: the model function, which takes doses \code{x} and parameters \code{t} as
 its two only arguments.
 \item \code{init}: an initialization function that is able to produce lower and
-upper search bounds for step 1. It takes \code{x}, \code{y} as arguments, as well
+upper search bounds for step 1. It takes \code{x} and \code{y} as arguments, as well
 as an optional \code{extend} argument that controls the extension of the
 search region.
 }
@@ -52,17 +52,17 @@ returned estimates.
 that takes a vector of residuals as its only argument or one of the following
 predefined strings:
 \itemize{
-\item \code{"lts"}: upper-trimmed mean (up to \code{lts_q}) of squared residuals.
+\item \code{"lts"}: \code{lts_q}-upper-trimmed mean of squared residuals.
 \item \code{"lms"}: median of squared residuals.
 \item \code{"ml1"}: mean of absolute residuals. This implements an M-estimate with
-\code{rho(r)} equal to \verb{|r|}, i.e. L1-regression.
+\code{rho(r)} = \verb{|r|}, i.e. L1-regression.
 \item \code{"sl1"}: median of absolute residuals. This implements an S-estimate with
-\code{rho(r)} equal to \verb{I(|r| > 1)}.
+\code{rho(r)} = \verb{I(|r| > 1)}.
 \item \code{"mbi"}: loss for bisquare M-estimate with cutoff point \code{mbi_k}, scaled by
-\code{mad(y)} so as to make it scale-equivariant.
+\code{1 / mad(y)} so as to make it scale-equivariant.
 \item \code{"sbi"}: (the default) loss for bisquare S-estimate with cutoff point
-\code{sbi_k}. The root finding routine will be extended by \code{ms_extend} (see the
-documentation for \code{m_scale}).
+\code{sbi_k}. The root finding search interval will be extended according to
+\code{ms_extend} (see the documentation for \code{m_scale}).
 }
 
 \code{loss(y - model$fun(x, t))} will be minimized with respect to \code{t} using a
@@ -72,22 +72,22 @@ the \code{model} parameter. Other arguments passed to \code{JDEoptim} may be ove
 by passing a \code{de_args} function. If the optimizer fails to converge to a
 solution, the entire \code{drob} function execution is aborted with an error.}
 
-\item{step_2}{The function used for computing a scale estimate for each dose.
-It may be a function taking a vector of residuals (with respect to \code{t0},
+\item{step_2}{The function used to compute a scale estimate for each dose.
+It may be a function taking a vector of residuals (relative to \code{t0}, as
 computed in step 1) and returning a scale estimate, or one of the following
 predefined strings:
 \itemize{
 \item \code{"sl1"}: median of absolute residuals. This is an M-estimate of scale with
-\code{rho(r)} equal to \verb{I(|r| > 1)}. It is scaled by \code{sl1_k}.
+\code{rho(r)} = \verb{I(|r| > 1)}. It is scaled by \code{sl1_k}.
 \item \code{"sbi"}: (the default) bisquare M-estimate of scale with cutoff point
 \code{sbi_k}.
 }
 
 The default values for \code{sl1_k} and \code{sbi_k} make the estimates equal to 1
 under the standard normal distribution. The function is called once for
-each different dose, passing it a vector with the responses for such dose.}
+each different dose, passing it a vector of residuals for such dose.}
 
-\item{step_3}{The loss function used for computing \code{t}. It may be the
+\item{step_3}{The loss function used to compute \code{t}. It may be the
 string \code{"mbi"} (the default) for a bisquare loss defining an M-estimate
 with cutoff point \code{mbi_k} or, more generally, a list containing at the least
 the following mandatory element:
@@ -95,14 +95,14 @@ the following mandatory element:
 \item \code{rho}: a rho-function taking a vector of scaled residuals.
 }
 
-The list may also contain two optional arguments:
+The list may also contain two optional elements:
 \itemize{
 \item \code{psi}: the first derivative of \code{rho}.
 \item \code{dpsi}: the second derivative of \code{rho}.
 }
 
 When \code{psi} and \code{dpsi} are present (as well as \code{model$grad}) standard errors
-of the returned estimates will be computed. Moreover, when \code{psi} is present
+for the returned estimates will be computed. Moreover, when \code{psi} is present
 (as well as \code{model$grad} and also \code{qn_gr} is \code{TRUE}) a gradient function
 is composed and passed as the argument for the parameter \code{gr} of \code{optim}.
 
@@ -123,24 +123,25 @@ aborted with an error.
 Other arguments passed to \code{optim} may be overriden by passing a \code{qn_args}
 function.}
 
-\item{lts_q}{The proportion of data to delete for the upper-trimmed mean
+\item{lts_q}{The proportion of data to be removed by the upper-trimmed mean
 loss (used when \code{step_1} is \code{"lts"}). By default 0.5 to achieve a high
 breakdown point.}
 
 \item{mbi_k}{The cutoff point used for bisquare M-estimates (argument
-\code{"mbi"} to \code{step_1} or \code{step_3}). By default 3.44 to achieve about 85\%
-asymptotic efficiency under the normal distribution. Other typical values
+\code{"mbi"} to \code{step_1} or \code{step_3}). By default 3.44 in order to achieve about
+85\% asymptotic efficiency under the normal distribution. Other typical values
 and their asymptotic efficiencies are: 3.14 (80\%), 3.88 (90\%), 4.68 (95\%).}
 
 \item{sbi_k}{The cutoff point used for bisquare M-estimates of scale and,
 consequently, also for bisquare S-estimates (argument \code{"sbi"} to \code{step_1}
-or \code{step_2}). By default 1.548 to achieve a breakdown point of about 0.5.}
+or \code{step_2}). By default 1.548 in order to achieve a breakdown point of
+about 0.5.}
 
 \item{sl1_k}{Scaling factor for the median of absolute residuals (
-argument \code{"sl1"} to \code{step_2}). By default 1.48 so that scale equals 1 under
+argument \code{"sl1"} to \code{step_2}). By default 1.48 in order to get 1 under
 the standard normal distribution.}
 
-\item{de_args}{A function that takes a list with the arguments to be pased
+\item{de_args}{A function that takes a list with the arguments to be passed
 to \code{JDEoptim} in step 1 and returns and arbitrarily modified list of
 arguments. By default it returns its argument unmodified.}
 
@@ -148,20 +149,20 @@ arguments. By default it returns its argument unmodified.}
 to \code{optim} in step 3 and returns and arbitrarily modified list of
 arguments. By default it returns its argument unmodified.}
 
-\item{qn_gr}{A flag that indicates if a composed function is passed as the
-argument to the parameter \code{gr} of the \code{optim} routine in step 3. Besides
-pass \code{TRUE} to \code{qn_gr}, for this to be the case both \code{model$grad} and
-\code{loss$psi} must be provided. Otherwise, a finite-difference approximation
+\item{qn_gr}{A flag that indicates if a gradient function is to be built and
+passed as the argument to the parameter \code{gr} of the \code{optim} routine in
+step 3. Besides \code{qn_gr} = \code{TRUE}, for this to be the case both \code{model$grad}
+and \code{loss$psi} must be provided. Otherwise, a finite-difference approximation
 will be used as per usual. By default \code{FALSE}.}
 
 \item{ms_extend}{When computing bisquare M-estimates of scale and,
 consequently, also when computing bisquare S-estimates, \code{ms_extend} will
-be based to \code{m_scale} in order to extend the root finding interval (for
-further details, refer to the documentation for \code{m_scale}). By default 5.}
+be passed to \code{m_scale} in order to extend the root finding interval (for
+further details, refer to the documentation of \code{m_scale}). By default 5.}
 
 \item{init_extend}{Passed to \code{model$init} in order to extend the search
-region defined by the lower and bounds passed to the differential
-evolution routine in step 1 and to the quasi-Newton L-BFGS-B routine in
+region defined by the lower and bounds employed both for the differential
+evolution routine in step 1 and for the quasi-Newton L-BFGS-B routine in
 step 3. By default 3.}
 }
 \value{
@@ -170,9 +171,9 @@ A list containing the following elements:
 \item \code{t}: a vector with the final location estimate, produced by step 3.
 \item \code{t0}: a vector with the initial location estimate, produced by step 1.
 \item \code{s}: a vector with a scale estimate for each dose, produced by step 2.
-\code{names(s)} gives the corresponding doses.
+\code{names(s)} will then give the corresponding doses.
 \item \code{init}: a list with the results of the initialization step for the model.
-It usually includes a non-robust location estimate with its standard error
+It usually includes a non-robust location estimate and its standard error
 estimates, besides lower and upper search bounds.
 \item \code{loss}: the value of the loss function for step 3 evaluated at \code{t}.
 }
@@ -184,17 +185,18 @@ list will also include a further element:
 }
 }
 \description{
-\code{drob} computes an M-estimate of location, given data \code{x} and \code{y} and model
-\code{model}, potentially nonlinear and heteroscedastic. It implements a 3-step
+\code{drob} computes an M-estimate of location from data \code{x} and \code{y}, given a
+potentially nonlinear and heteroscedastic model. It implements a 3-step
 procedure in the spirit of MM-estimation:
 \itemize{
 \item Step 1: heuristically computes an initial location estimate \code{t0}.
 \item Step 2: computes scale estimates \code{s} for each dose, based on the residuals
 with respect to \code{t0}.
-\item Step 3: starting from \code{t0} and scaling by \code{s} a final location estimate \code{t}
-is found iteratively.
-Each step can be fine-tuned using the parameters described below.
+\item Step 3: starting from \code{t0} and scaling by \code{s} a final location M-estimate
+\code{t} is found iteratively.
 }
+
+Each step may be fine-tuned using the parameters described below.
 }
 \examples{
 
