@@ -11,12 +11,13 @@ Authors@R:
         email = "carlosjosepita@gmail.com",
         role = c("cre", "aut")
     )
-URL: hhttps://github.com/memeplex/drob
+URL: https://github.com/memeplex/drob
 BugReports: https://github.com/memeplex/drob/issues
-License: `use_mit_license()`
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
 Imports:
     drc (>= 3.0.1),
-    DEoptimR (>= 1.1.3)
+    DEoptimR (>= 1.1.3),
+    MASS

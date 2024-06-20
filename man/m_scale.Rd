@@ -22,3 +22,7 @@ The \code{rho}-based M-estimate of scale for \code{r}.
 \code{m_scale} computes an M-estimate of scale for a given rho function using
 one-dimensional root finding.
 }
+\examples{
+m_scale(r, bisquare(1.55))
+
+}
