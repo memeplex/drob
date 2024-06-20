@@ -1,0 +1,22 @@
+Package: drob
+Title: Compute robust estimates of dose-response model parameters
+Description:
+    Compute robust estimates of potentially nonlinear and heteroscedastic
+    dose-response model parameters using a 3-step algorithm in the spirit of
+    MM-estimation.
+Version: 0.0.1
+Authors@R:
+    person(
+        "Carlos", "Pita",
+        email = "carlosjosepita@gmail.com",
+        role = c("cre", "aut")
+    )
+URL: hhttps://github.com/memeplex/drob
+BugReports: https://github.com/memeplex/drob/issues
+License: `use_mit_license()`
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
+Imports:
+    drc (>= 3.0.1),
+    DEoptimR (>= 1.1.3)
