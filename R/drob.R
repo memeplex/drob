@@ -1,7 +1,3 @@
-library(MASS)
-library(drc)
-library(DEoptimR)
-
 #' The 4-parameter logistic model (4PL)
 #'
 #' @description
@@ -38,7 +34,7 @@ fpl <- list(
     )
   },
   init = function(x, y, extend = 3) {
-    coef <- summary(drm(y ~ x, fct = LL.4()))$coefficients
+    coef <- summary(drc::drm(y ~ x, fct = drc::LL.4()))$coefficients
     idx <- if (coef[1] >= 0) c(3, 1, 4, 2) else c(2, 1, 4, 3)
     t <- unname(coef[idx, 1])
     se <- unname(coef[idx, 2])
@@ -330,7 +326,7 @@ drob <- function( # nolint
     fn = function(t) loss(y - model$fun(x, t)),
     lower = lower, upper = upper, fnscale = mloss, tol = 1e-6
   ))
-  res <- do.call(JDEoptim, args)
+  res <- do.call(DEoptimR::JDEoptim, args)
   if (res$convergence == 1) stop("Step 1: optimizer failed")
   t0 <- res$par
 
@@ -384,7 +380,7 @@ drob <- function( # nolint
       g <- model$grad(x, t)
       outer(g, g) / s^2
     }, x, sx, SIMPLIFY = FALSE)) / length(x)
-    sqrt(((mp / md) * diag(ginv(mg))) / length(x))
+    sqrt(((mp / md) * diag(MASS::ginv(mg))) / length(x))
   }
 
   list(t = t, t0 = t0, s = s, se = se, init = init, loss = res$value)
