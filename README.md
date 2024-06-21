@@ -8,7 +8,7 @@ You can install it directly from this repository by taking advantage of [devtool
 devtools::install_github("memeplex/drob")
 ```
 
-For further details, please refer to the [reference documentation](drob.pdf).
+For further details, please refer to the [reference documentation](assets/drob.pdf).
 
 Here is a minimal example:
 
@@ -29,5 +29,5 @@ legend("topleft", legend = c("t", "t_ls", "t_m"), lty = rep(1, 3), col = 1:3)
 ```
 
 <p align="center" width="100%">
-  <img src="plot.svg" width="600" />
+  <img src="assets/plot.svg" width="600" />
 </p>
