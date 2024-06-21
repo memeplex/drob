@@ -34,7 +34,10 @@ fpl <- list(
     )
   },
   init = function(x, y, extend = 3) {
-    coef <- summary(drc::drm(y ~ x, fct = drc::LL.4()))$coefficients
+    idx <- as.factor(x)
+    s <- tapply(y, idx, sd)[idx]
+    est <- drc::drm(y ~ x, fct = drc::LL.4(), weights = 1 / s)
+    coef <- summary(est)$coefficients
     idx <- if (coef[1] >= 0) c(3, 1, 4, 2) else c(2, 1, 4, 3)
     t <- unname(coef[idx, 1])
     se <- unname(coef[idx, 2])
@@ -380,7 +383,7 @@ drob <- function( # nolint
       g <- model$grad(x, t)
       outer(g, g) / s^2
     }, x, sx, SIMPLIFY = FALSE)) / length(x)
-    sqrt(((mp / md) * diag(MASS::ginv(mg))) / length(x))
+    sqrt(((mp / md) * diag(solve(mg))) / length(x))
   }
 
   list(t = t, t0 = t0, s = s, se = se, init = init, loss = res$value)
