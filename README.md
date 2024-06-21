@@ -28,7 +28,4 @@ lines(x, fpl$fun(x, est$t), col = 3)
 legend("topleft", legend = c("t", "t_ls", "t_m"), lty = rep(1, 3), col = 1:3)
 ```
 
-
-
-
-
+![Output of example](plot.svg)
