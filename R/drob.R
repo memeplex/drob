@@ -41,7 +41,7 @@ fpl <- list(
     p <- (1 - 2 * eps) * p[ux != 0] + eps
     b <- coef(lm(log(p / (1 - p)) ~ log(ux[ux != 0])))
     t0 <- list(t1 = r[1], t2 = -b[2], t3 = exp(-b[1] / b[2]), t4 = r[2])
-    w <- 1 / as.vector(tapply(y, x, sd)[as.factor(x)])
+    w <- 1 / as.vector(tapply(y, x, var)[as.factor(x)])
     b <- summary(nls(
       y ~ t4 + (t1 - t4) / (1 + (x / t3)^t2), start = t0, weights = w
     ))$coefficients
