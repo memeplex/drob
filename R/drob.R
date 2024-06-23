@@ -33,19 +33,26 @@ fpl <- list(
       a / (1 + a)
     )
   },
-  init = function(x, y, extend = 3) {
-    idx <- as.factor(x)
-    s <- tapply(y, idx, sd)[idx]
-    est <- drc::drm(y ~ x, fct = drc::LL.4(), weights = 1 / s)
-    coef <- summary(est)$coefficients
-    idx <- if (coef[1] >= 0) c(3, 1, 4, 2) else c(2, 1, 4, 3)
-    t <- unname(coef[idx, 1])
-    se <- unname(coef[idx, 2])
+  init = function(x, y, extend = 15, eps = 1e-6) {
+    ux <- unique(x)
+    uy <- tapply(y, x, mean)
+    r <- range(uy)
+    p <- (uy - r[2]) / (r[1] - r[2])
+    p <- (1 - 2 * eps) * p[ux != 0] + eps
+    b <- coef(lm(log(p / (1 - p)) ~ log(ux[ux != 0])))
+    t0 <- list(t1 = r[1], t2 = -b[2], t3 = exp(-b[1] / b[2]), t4 = r[2])
+    w <- 1 / as.vector(tapply(y, x, sd)[as.factor(x)])
+    b <- summary(nls(
+      y ~ t4 + (t1 - t4) / (1 + (x / t3)^t2), start = t0, weights = w
+    ))$coefficients
+    i <- if (b[2, 1] < 0) c(4, 2, 3, 1) else 1:4
+    t <- unname(b[i, 1])
     t[2] <- abs(t[2])
-    bound <- function(x, dir) x + dir * extend * abs(x)
-    init <- list(t = t, se = se, lower = bound(t, -1), upper = bound(t, +1))
-    init$lower[c(2, 3)] <- 1e-100
-    init
+    se <- unname(b[i, 2])
+    lower <- t - extend * se
+    upper <- t + extend * se
+    lower[c(2, 3)] <- 0
+    list(t = t, se = se, lower = lower, upper = upper)
   }
 )
 
@@ -228,13 +235,11 @@ m_scale <- function(r, rho, extend = 5) {
 #' argument `"sl1"` to `step_2`). By default 1.48 in order to get 1 under
 #' the standard normal distribution.
 #'
-#' @param de_args A function that takes a list with the arguments to be passed
-#' to `JDEoptim` in step 1 and returns and arbitrarily modified list of
-#' arguments. By default it returns its argument unmodified.
+#' @param de_args A list that overrides arguments passed to `JDEoptim` in
+#' step 1 as in `utils::modifyList(args, de_args)`. By default it is empty.
 #'
-#' @param qn_args A function that takes a list with the arguments to be passed
-#' to `optim` in step 3 and returns and arbitrarily modified list of
-#' arguments. By default it returns its argument unmodified.
+#' @param qn_args A list that overrides arguments passed to `optim` in
+#' step 3 as in `utils::modifyList(args, qn_args)`. By default it is empty.
 #'
 #' @param qn_gr A flag that indicates if a gradient function is to be built and
 #' passed as the argument to the parameter `gr` of the `optim` routine in
@@ -246,11 +251,6 @@ m_scale <- function(r, rho, extend = 5) {
 #' consequently, also when computing bisquare S-estimates, `ms_extend` will
 #' be passed to `m_scale` in order to extend the root finding interval (for
 #' further details, refer to the documentation of `m_scale`). By default 5.
-#'
-#' @param init_extend Passed to `model$init` in order to extend the search
-#' region defined by the lower and bounds employed both for the differential
-#' evolution routine in step 1 and for the quasi-Newton L-BFGS-B routine in
-#' step 3. By default 3.
 #'
 #' @return A list containing the following elements:
 #' - `t`: a vector with the final location estimate, produced by step 3.
@@ -293,11 +293,10 @@ drob <- function( # nolint
   mbi_k = 3.44,
   sbi_k = 1.548,
   sl1_k = 1.48,
-  de_args = identity,
-  qn_args = identity,
+  de_args = list(),
+  qn_args = list(),
   qn_gr = FALSE,
-  ms_extend = 5,
-  init_extend = 3
+  ms_extend = 5
 ) {
   select <- function(arg, ...) if (is.character(arg)) switch(arg, ...) else arg
   mbi <- bisquare(mbi_k)
@@ -307,7 +306,7 @@ drob <- function( # nolint
     "fpl" = fpl,
     stop("Invalid model '", model, "'")
   )
-  init <- model$init(x, y, init_extend)
+  init <- model$init(x, y)
   lower <- init$lower
   upper <- init$upper
 
@@ -325,11 +324,11 @@ drob <- function( # nolint
   )
   grid <- matrix(runif(1000, lower, upper), nrow = length(lower))
   mloss <- median(abs(apply(grid, 2, loss)))
-  args <- de_args(list(
-    fn = function(t) loss(y - model$fun(x, t)),
-    lower = lower, upper = upper, fnscale = mloss, tol = 1e-6
-  ))
-  res <- do.call(DEoptimR::JDEoptim, args)
+  args <- list(
+    fn = function(t) loss(y - model$fun(x, t)), lower = lower, upper = upper,
+    fnscale = mloss, tol = 1e-8, maxiter = 500 * length(lower)
+  )
+  res <- do.call(DEoptimR::JDEoptim, utils::modifyList(args, de_args))
   if (res$convergence == 1) stop("Step 1: optimizer failed")
   t0 <- res$par
 
@@ -362,7 +361,7 @@ drob <- function( # nolint
     control = list(parscale = t0, trace = 0)
   )
   optimize <- function(...) {
-    res <- do.call(optim, qn_args(append(args, list(...))))
+    res <- do.call(optim, utils::modifyList(append(args, list(...)), qn_args))
     if (res$convergence %in% c(51, 52)) {
       stop("Step 3: optimizer failed with '", res$message, "'")
     }
