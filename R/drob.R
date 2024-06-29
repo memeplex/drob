@@ -1,6 +1,5 @@
 #' The 4-parameter logistic model (4PL)
 #'
-#' @description
 #' `fpl` is a list containing three elements related to the 4-parameter logistic
 #' model, as required by the `model` parameter of the `drob` function:
 #' - `fun`: the 4PL-function itself. It takes as arguments a vector of values
@@ -33,12 +32,12 @@ fpl <- list(
       a / (1 + a)
     )
   },
-  init = function(x, y, extend = 15, eps = 1e-6) {
+  init = function(x, y, extend = 15, eps1 = 1e-6, eps2 = 1e-12) {
     ux <- unique(x)
     uy <- tapply(y, x, mean)
     r <- range(uy)
     p <- (uy - r[2]) / (r[1] - r[2])
-    p <- (1 - 2 * eps) * p[ux != 0] + eps
+    p <- (1 - 2 * eps1) * p[ux != 0] + eps1
     b <- coef(lm(log(p / (1 - p)) ~ log(ux[ux != 0])))
     t0 <- list(t1 = r[1], t2 = -b[2], t3 = exp(-b[1] / b[2]), t4 = r[2])
     w <- 1 / as.vector(tapply(y, x, var)[as.factor(x)])
@@ -51,14 +50,14 @@ fpl <- list(
     se <- unname(b[i, 2])
     lower <- t - extend * se
     upper <- t + extend * se
-    lower[c(2, 3)] <- 0
+    lower[2] <- 0
+    lower[3] <- eps2 * min(ux[ux != 0])
     list(t = t, se = se, lower = lower, upper = upper)
   }
 )
 
 #' Return bisquare and its derivatives
 #'
-#' @description
 #' This computes bisquare (aka Tukey's biweight) function for a given cutoff
 #' point. It also computes its first two derivatives. All three functions
 #' are returned as elements of a list with names `rho`, `psi` and `dpsi`,
@@ -92,7 +91,6 @@ bisquare <- function(k) {
 
 #' Compute M-estimate of scale
 #'
-#' @description
 #' `m_scale` computes an M-estimate of scale for a given rho-function using
 #' a one-dimensional root finding routine.
 #'
@@ -252,6 +250,10 @@ m_scale <- function(r, rho, extend = 5) {
 #' be passed to `m_scale` in order to extend the root finding interval (for
 #' further details, refer to the documentation of `m_scale`). By default 5.
 #'
+#' @param bounds A function that takes the `init` list produced by the model
+#' and may update `init$lower` and/or `init$upper` based on domain-specific
+#' considerations. By default it returns `init` unchanged.
+#'
 #' @return A list containing the following elements:
 #' - `t`: a vector with the final location estimate, produced by step 3.
 #' - `t0`: a vector with the initial location estimate, produced by step 1.
@@ -296,7 +298,8 @@ drob <- function( # nolint
   de_args = list(),
   qn_args = list(),
   qn_gr = FALSE,
-  ms_extend = 5
+  ms_extend = 5,
+  bounds = identity
 ) {
   select <- function(arg, ...) if (is.character(arg)) switch(arg, ...) else arg
   mbi <- bisquare(mbi_k)
@@ -306,7 +309,7 @@ drob <- function( # nolint
     "fpl" = fpl,
     stop("Invalid model '", model, "'")
   )
-  init <- model$init(x, y)
+  init <- bounds(model$init(x, y))
   lower <- init$lower
   upper <- init$upper
 

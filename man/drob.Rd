@@ -15,11 +15,11 @@ drob(
   mbi_k = 3.44,
   sbi_k = 1.548,
   sl1_k = 1.48,
-  de_args = identity,
-  qn_args = identity,
+  de_args = list(),
+  qn_args = list(),
   qn_gr = FALSE,
   ms_extend = 5,
-  init_extend = 3
+  bounds = identity
 )
 }
 \arguments{
@@ -141,13 +141,11 @@ about 0.5.}
 argument \code{"sl1"} to \code{step_2}). By default 1.48 in order to get 1 under
 the standard normal distribution.}
 
-\item{de_args}{A function that takes a list with the arguments to be passed
-to \code{JDEoptim} in step 1 and returns and arbitrarily modified list of
-arguments. By default it returns its argument unmodified.}
+\item{de_args}{A list that overrides arguments passed to \code{JDEoptim} in
+step 1 as in \code{utils::modifyList(args, de_args)}. By default it is empty.}
 
-\item{qn_args}{A function that takes a list with the arguments to be passed
-to \code{optim} in step 3 and returns and arbitrarily modified list of
-arguments. By default it returns its argument unmodified.}
+\item{qn_args}{A list that overrides arguments passed to \code{optim} in
+step 3 as in \code{utils::modifyList(args, qn_args)}. By default it is empty.}
 
 \item{qn_gr}{A flag that indicates if a gradient function is to be built and
 passed as the argument to the parameter \code{gr} of the \code{optim} routine in
@@ -160,10 +158,9 @@ consequently, also when computing bisquare S-estimates, \code{ms_extend} will
 be passed to \code{m_scale} in order to extend the root finding interval (for
 further details, refer to the documentation of \code{m_scale}). By default 5.}
 
-\item{init_extend}{Passed to \code{model$init} in order to extend the search
-region defined by the lower and bounds employed both for the differential
-evolution routine in step 1 and for the quasi-Newton L-BFGS-B routine in
-step 3. By default 3.}
+\item{bounds}{A function that takes the \code{init} list produced by the model
+and may update \code{init$lower} and/or \code{init$upper} based on domain-specific
+considerations. By default it returns \code{init} unchanged.}
 }
 \value{
 A list containing the following elements:
